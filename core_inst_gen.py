@@ -71,7 +71,7 @@ class bound_gap:
         """
         for M in combinations_with_replacement(product([0, s, b], repeat=self.n), self.m):
             # We have to check whether M is already found or not.
-            if
+            if ...:
                 # We have to loop through all matrices that majorate M, and
                 # all their variants with permuted rows / columns, and add them to visited
                 # We switch to numpy for easier handling.

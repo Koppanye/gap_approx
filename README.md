@@ -13,7 +13,7 @@ n = 10, m = 4), and by this we are able to derive an upper bound of
 g + (n x epsilon) for the "real gap" in this small dimensions.
 
 For a small enough epsilon, we hope to gain further insight 
-on the "real gap" (so far known to be between 1 and 5/3) by examining
+on the "real gap" (so far known to be between 3/2 and 5/3) by examining
 the experimental bound. If gap + (n x epsilon) is smaller, we could
 state a conjecture that the "real gap" is that specific value 
 (provided that we are able to determine it), and try coming up with

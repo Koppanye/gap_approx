@@ -23,5 +23,5 @@ def majorate_iterator(M, forb_coords, vis_inst):
 
 
 def matrix_perm(M, vis_inst):
-    for row_perm, col_perm in product(permutations(range(3)), permutations(range(4))):
-        vis_inst.add(''.join(list(np.array(M)[row_perm, :][:, col_perm].reshape(1, -1)[0])))
+    for row_perm, col_perm in product(permutations(range(len(M))), permutations(range(len(M[0])))):
+        vis_inst.add(' '.join(list(np.array(M)[row_perm, :][:, col_perm].reshape(1, -1)[0])))

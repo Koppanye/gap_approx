@@ -27,17 +27,17 @@ import heapq
 
 
 class bound_gap:
-    def __init__(self, n, m, epsilon, stored_instance=20):
-        self.n = n
-        self.m = m
+    def __init__(self, n_jobs, n_machines, epsilon, stored_instance=20):
+        self.n = n_jobs
+        self.m = n_machines
         self.epsilon = epsilon
         self.largest_num = int(1/self.epsilon)+1  # The largest integer we have to consider
 
         self.stored_instance = stored_instance
         self.best_gap = 1  # We record the highest gap found
-        # We also record the best-many instances with the highest integrality gap for later studies,
+        # We also record the stored_instance-many instances with the highest integrality gap for later studies,
         # with a min-heap of (gap, instance) pairs
-        self.best_instances = [(1, '1'*(n*m))]
+        self.best_instances = [(1, ('1 '*(self.n * self.m)).rstrip())]
         self.gap_bound = None  # Once finished, it will be self.best_gap + self.n * self.epsilon
 
     def core_instance_generator(self):
@@ -54,7 +54,6 @@ class bound_gap:
             # We simplify the fraction s/b by finding gcd(s,d)
             if math.gcd(s, b) == 1:
                 self.instance_iterator(s, b)
-        return True
 
     def instance_iterator(self, s, b):
         """
@@ -63,7 +62,7 @@ class bound_gap:
         Considerations:
             - If an instance only contains either s or b, then it has already been visited.
               However, we still have to discard all other instances majorating it.
-            - If an instance has an LP-optimum larger than 1, then it couldn't have been rounded down
+            - If an instance has an LP-optimum larger than 1/epsilon, then it couldn't have been rounded down
               from an instance with LP-optimum equal to 1.
         """
         visited = set()
@@ -76,24 +75,25 @@ class bound_gap:
         """
         for M in combinations_with_replacement(product(['0', str(s), str(b)], repeat=self.n), self.m):
             M = list(map(list, M))
-            # We have to check whether M is valid or not (s and b cannot appear in the same column)
+            # We have to check whether M is valid or not: s and b cannot appear in the same column,
+            # and a column cannot contain only '0' values.
             valid = True
             for j in range(self.n):
                 col = set(M[i][j] for i in range(self.m))
-                if str(s) in col and str(b) in col:
+                if (str(s) in col and str(b) in col) or ('0' in col and len(col) == 1):
                     valid = False
                     break
 
             if not valid:
                 pass
 
-            str_form = ''.join([''.join(M[i]) for i in range(self.m)])
+            str_form = ' '.join([' '.join(M[i]) for i in range(self.m)])
             # If M is not in visited, we process it
             if str_form not in visited:
                 instance = Instance(M)
-                # If LP_opt > 1, we don't consider it. But we still throw away all of its permutations.
-                X_frac, opt_frac = instance.opt_LP()
-                if opt_frac <= 1:
+                # If LP_opt > 1/epsilon, we don't consider it. But we still throw away all of its permutations.
+                opt_frac = instance.opt_LP()
+                if opt_frac <= self.largest_num:
                     X_int, opt_int = instance.opt_IP()
                     gap = instance.gap()
                     if len(self.best_instances) < self.stored_instance:
@@ -102,15 +102,18 @@ class bound_gap:
                         heapq.heappushpop(self.best_instances, (gap, str_form))
                     forbidden_coords = X_int
                     """
-                    TODO
-                    transform it into a dict
+                    It is a list of length n, and the j-th coord is the machine where
+                    job j is placed
                     """
                 else:
-                    forbidden_coords = {}
+                    forbidden_coords = [-1]*self.n
                 # We have to loop through all matrices that majorate M, and
                 # all their variants with permuted rows / columns, and add them to visited.
                 majorate_iterator(M, forbidden_coords, visited)
 
         self.best_gap = heapq.nlargest(1, self.best_instances)[0]
         self.gap_bound = self.best_gap + self.n * self.epsilon
-        return True
+
+    def print_results(self):
+        print(f"Best gap: {self.best_gap},\n upper bound on real gap: {self.gap_bound},\n"
+              f"best instances: {self.best_instances}.")

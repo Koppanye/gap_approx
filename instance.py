@@ -69,6 +69,7 @@ class Instance:
             for j in range(self.n_jobs):
                 if self.processing_times[i][j] == '0':
                     x[i, j] = model.addVar(vtype="B", name=f"x({i},{j})", lb=0.0, ub=0.0)
+                    #x[i, j] = 0
                 else:
                     x[i, j] = model.addVar(vtype="B", name=f"x({i},{j})", lb=0.0)
 
@@ -85,6 +86,9 @@ class Instance:
         # Constraint 2. The processing time on each machine must be at most C_max
         for i in range(self.n_machines):
             model.addCons(sum(x[i, j] * int(self.processing_times[i][j]) for j in range(self.n_jobs)) <= C_max)
+
+        # Print the model
+        model.writeProblem('model.lp')
 
         # Optimize the model
         model.optimize()

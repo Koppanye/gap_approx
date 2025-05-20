@@ -87,7 +87,7 @@ class bound_gap:
                     break
 
             if not valid:
-                pass
+                continue
 
             str_form = ' '.join([' '.join(M[i]) for i in range(self.m)])
             # If M is not in visited, we process it

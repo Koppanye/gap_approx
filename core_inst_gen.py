@@ -55,6 +55,8 @@ class bound_gap:
             if math.gcd(s, b) == 1:
                 self.instance_iterator(s, b)
 
+        print('Instances generated')
+
     def instance_iterator(self, s, b):
         """
         For a given pair (s, b) in {(1, 1), (1, 2), ... , (1/epsilon, 1/epsilon)},

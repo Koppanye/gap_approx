@@ -88,8 +88,9 @@ class Instance:
 
         # Optimize the model
         model.optimize()
+        model.freeTransform()
 
-        solution = list({i: j for i in range(self.n_machines) for j in range(self.n_jobs) if model.getVal(x[(j, i)]) > 0.5}.values())
+        solution = list({i: j for i in range(self.n_machines) for j in range(self.n_jobs) if model.getVal(x[i, j]) > 0.5}.values())
 
         return solution, model.getObjVal()
 

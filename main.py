@@ -12,6 +12,7 @@ stored_instance = 30
 
 # Solve
 g = bound_gap(n, m, epsilon, stored_instance)
+g.core_instance_generator()
 
 # Get results
 g.print_results()

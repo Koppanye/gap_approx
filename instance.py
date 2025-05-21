@@ -1,4 +1,4 @@
-from pyscipopt import Model, SCIP_PARAMSETTING
+from pyscipopt import Model
 from itertools import combinations
 
 
@@ -17,7 +17,7 @@ class Instance:
         We maintain the invariant that LB is in (l, r].
         """
         right = sum(sum(int(self.processing_times[i][j]) for j in range(self.n_jobs)) for i in range(self.n_machines))
-        left = max(max(int(self.processing_times[i][j]) for j in range(self.n_jobs)) for i in range(self.n_machines))
+        left = max(max(int(self.processing_times[i][j]) for j in range(self.n_jobs)) for i in range(self.n_machines))-1
         while right - left > 1:
             m = (left + right)//2
             is_feasible = self.is_feasible(m)
@@ -34,7 +34,7 @@ class Instance:
         :return: True if LP(T) is feasible, otherwise False
         """
         model = Model('Restricted assignment with 2 processing times')
-        # model.hideOutput()
+        model.hideOutput()
 
         # Determining valid configurations (with makespan at most T) for each machine in the form of a dict
         # Values are lists of tuples, one tuple for each valid configuration
@@ -48,7 +48,8 @@ class Instance:
 
         # Each machine can allocate at most 1 config
         for i in range(self.n_machines):
-            model.addCons(sum(x[i, c] for c in configs[i]) <= 1)
+            if len(configs[i]) != 0:
+                model.addCons(sum(x[i, c] for c in configs[i]) <= 1)
 
         # Each job gets allocated at least once
         for j in range(self.n_jobs):
@@ -61,7 +62,7 @@ class Instance:
 
     def opt_IP(self):
         model = Model('Restricted assignment with 2 processing times')
-        # model.hideOutput()
+        model.hideOutput()
 
         # Decision variables
         x = {}
@@ -88,13 +89,13 @@ class Instance:
             model.addCons(sum(x[i, j] * int(self.processing_times[i][j]) for j in range(self.n_jobs)) <= C_max)
 
         # Print the model
-        model.writeProblem('model.lp')
+        # model.writeProblem('model.lp')
 
         # Optimize the model
         model.optimize()
-        model.freeTransform()
+        # model.freeTransform()
 
-        solution = list({i: j for i in range(self.n_machines) for j in range(self.n_jobs) if model.getVal(x[i, j]) > 0.5}.values())
+        solution = list({j: i for j in range(self.n_jobs) for i in range(self.n_machines) if model.getVal(x[i, j]) > 0.5}.values())
 
         return solution, model.getObjVal()
 

@@ -1,8 +1,8 @@
 from core_inst_gen import bound_gap
 
 # Specify the input dimensions
-n = 3
-m = 4
+n = 4
+m = 3
 
 # Specify the error
 epsilon = 0.01

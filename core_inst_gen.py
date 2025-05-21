@@ -54,6 +54,7 @@ class bound_gap:
             # We simplify the fraction s/b by finding gcd(s,d)
             if math.gcd(s, b) == 1:
                 self.instance_iterator(s, b)
+                print(f'Current best gap is {self.best_gap}')
 
         print('Instances generated')
 
@@ -86,6 +87,13 @@ class bound_gap:
                     valid = False
                     break
 
+            # We also check if M contains an all-0 row, in which case it reduces to an equivalent instance
+            # with one less row, and we don't need to process it
+            for i in range(self.m):
+                if '0' in set(M[i]) and len(set(M[i])) == 1:
+                    valid = False
+                    break
+
             if not valid:
                 continue
 
@@ -113,7 +121,9 @@ class bound_gap:
                 # all their variants with permuted rows / columns, and add them to visited.
                 majorate_iterator(M, forbidden_coords, visited)
 
-        self.best_gap = heapq.nlargest(1, self.best_instances)[0]
+                print(f'Current gap is {opt_int} / {opt_frac} = {gap}, given by instance {M}')
+
+        self.best_gap = heapq.nlargest(1, self.best_instances)[0][0]
         self.gap_bound = self.best_gap + self.n * self.epsilon
 
     def print_results(self):

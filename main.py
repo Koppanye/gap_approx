@@ -5,7 +5,7 @@ n = 4
 m = 3
 
 # Specify the error
-epsilon = 0.01
+epsilon = 0.1
 
 # Specify the number of instances you want to have with high gaps
 stored_instance = 30

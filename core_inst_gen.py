@@ -19,11 +19,14 @@ for (n x m) greater than 20. For this, we apply the following (implementation) t
 For each instance, we calculate LP-opt and IP-opt. Our upper bound on the empirical gap is
 sup{ IP-opt / LP-opt } + (epsilon x n)
 """
+from absl.logging import flush
+
 from instance import Instance
 from helper_funcs import majorate_iterator
 from itertools import combinations, combinations_with_replacement, product
 import math
 import heapq
+from tqdm import tqdm
 
 
 class bound_gap:
@@ -50,13 +53,16 @@ class bound_gap:
         # We treat this case separately, as we have just 1 processing time
         self.instance_iterator(1, 1)
 
+        s_b_counter = 0
         for (s, b) in combinations(range(1, self.largest_num + 1), 2):
+            s_b_counter += 1
             # We simplify the fraction s/b by finding gcd(s,d)
             if math.gcd(s, b) == 1:
                 self.instance_iterator(s, b)
-                print(f'Current best gap is {self.best_gap}')
 
-        print('Instances generated')
+                print(f'Done with {s}, {b} (Pair {s_b_counter}); Current best gap is {self.best_gap}', flush=True)
+
+        print('Instances generated', flush=True)
 
     def instance_iterator(self, s, b):
         """
@@ -76,7 +82,7 @@ class bound_gap:
         we check whether it is in visited or not. If it is, we pass; if it is not, we process it.
         The instances are stored in an m*n-long string in order to be unhashable.
         """
-        for M in combinations_with_replacement(product(['0', str(s), str(b)], repeat=self.n), self.m):
+        for M in tqdm(combinations_with_replacement(product(['0', str(s), str(b)], repeat=self.n), self.m)):
             M = list(map(list, M))
             # We have to check whether M is valid or not: s and b cannot appear in the same column,
             # and a column cannot contain only '0' values.
@@ -106,6 +112,8 @@ class bound_gap:
                 if opt_frac <= self.largest_num:
                     X_int, opt_int = instance.opt_IP()
                     gap = instance.gap()
+                    if gap > self.best_gap:
+                        print(f'New best gap found: {gap}, given by instance {M}', flush=True)
                     if len(self.best_instances) < self.stored_instance:
                         heapq.heappush(self.best_instances, (gap, str_form))
                     else:
@@ -121,11 +129,13 @@ class bound_gap:
                 # all their variants with permuted rows / columns, and add them to visited.
                 majorate_iterator(M, forbidden_coords, visited)
 
-                print(f'Current gap is {opt_int} / {opt_frac} = {gap}, given by instance {M}')
+                #print(f'Current gap is {opt_int} / {opt_frac} = {gap}, given by instance {M}')
+
+
 
         self.best_gap = heapq.nlargest(1, self.best_instances)[0][0]
         self.gap_bound = self.best_gap + self.n * self.epsilon
 
     def print_results(self):
         print(f"Best gap: {self.best_gap},\n upper bound on real gap: {self.gap_bound},\n"
-              f"best instances: {self.best_instances}.")
+              f"best instances: {self.best_instances}.", flush=True)

@@ -1,5 +1,162 @@
 from pyscipopt import Model
 from itertools import combinations
+import numpy as np
+
+class InstanceRestrictedAssignment():
+    """
+    Class for instances of the restricted assignment problem with integer processing times
+
+    Parameters
+    ----------
+    See __init__()
+
+    Attributes
+    ----------
+    See __init__()
+
+    Methods
+    -------
+    opt_IP():
+        Solve the integer programming formulation of the problem
+
+    opt_configuration_LP():
+        Solve the configuration LP of the problem
+    """
+
+    def __init__(self, n, m, q, p_max = 100):
+        """
+        Constructor for the InstanceRestrictedAssignment class.
+        Parameters
+        ----------
+        n : int
+            Number of jobs
+        m : int
+            Number of machines
+        q : float
+            Probability of having a restriction (i.e., processing time of -1) in a machine-job pair
+        p_max : int
+            Maximum processing time for a job on a machine
+        seed : int
+            Random seed for reproducibility
+        """
+        self.n_jobs = n
+        self.n_machines = m
+        self.probability_of_restriction = q
+        self.q = q
+        self.p_max = p_max
+        self.M = np.zeros((self.n_machines, self.n_jobs), dtype=int) # Machines x Jobs as in Jansen, Rohwedder 2017
+
+        # Basic checks
+        assert 0 <= q <= 1, "Probability q must be between 0 and 1"
+
+        # Set random seed for reproducibility
+        np.random.seed()
+        for j in range(self.n_jobs):
+            # Random processing time between 1 and p_max
+            p_j = np.random.randint(1, self.p_max)  # Random processing time between 1 and 100
+            rng = np.random.default_rng()
+            assignments = rng.binomial(1, self.q, self.n_machines)
+            # If the max is 0, then trial again
+            while np.max(assignments) > 0:
+                assignments = rng.binomial(1, self.q, self.n_machines)
+            self.M[:, j] = [p_j if assignments[i] == 0 else -1 for i in range(self.n_machines)]
+
+
+    def opt_LP(self):
+        """
+        Linear relaxation of opt_LP
+        # TODO also return the solution in a suitable format
+
+        Return
+        ------
+        obj_val : float
+            Optimal objective value of the LP relaxation
+        """
+        model = Model('Restricted assignment with 2 processing times')
+        model.hideOutput()
+
+        # Decision variables
+        x = {}
+        for i in range(self.n_machines):
+            for j in range(self.n_jobs):
+                if self.M[i][j] == -1:
+                    #x[i, j] = 0
+                    x[i, j] = model.addVar(vtype="C", name=f"x({i},{j})", lb=0.0, ub=0.0)
+                else:
+                    x[i, j] = model.addVar(vtype="C", name=f"x({i},{j})", lb=0.0)
+
+        # Makespan
+        C_max = model.addVar(vtype="C", name="C_max", lb=0.0)
+
+        # Objective function
+        model.setObjective(C_max, "minimize")
+
+        # Constraint 1. You have to allocate each job
+        for j in range(self.n_jobs):
+            model.addCons(sum(x[i, j] for i in range(self.n_machines)) == 1)
+
+        # Constraint 2. The processing time on each machine must be at most C_max
+        for i in range(self.n_machines):
+            model.addCons(sum(x[i, j] * int(self.M[i][j]) for j in range(self.n_jobs)) <= C_max)
+
+        # Print the model
+        # model.writeProblem('model.lp')
+
+        # Optimize the model
+        model.optimize()
+        # model.freeTransform()
+
+        solution = list({j: i for j in range(self.n_jobs) for i in range(self.n_machines) if model.getVal(x[i, j]) > 0.5}.values())
+
+        return solution, model.getObjVal()
+
+    def opt_LP(self):
+        model = Model('Restricted assignment with 2 processing times')
+        model.hideOutput()
+
+        # Decision variables
+        x = {}
+        for i in range(self.n_machines):
+            for j in range(self.n_jobs):
+                if self.M[i][j] == -1:
+                    # x[i, j] = 0
+                    x[i, j] = model.addVar(vtype="B", name=f"x({i},{j})", lb=0.0, ub=0.0)
+                else:
+                    x[i, j] = model.addVar(vtype="B", name=f"x({i},{j})", lb=0.0)
+
+        # Makespan
+        C_max = model.addVar(vtype="C", name="C_max", lb=0.0)
+
+        # Objective function
+        model.setObjective(C_max, "minimize")
+
+        # Constraint 1. You have to allocate each job
+        for j in range(self.n_jobs):
+            model.addCons(sum(x[i, j] for i in range(self.n_machines)) == 1)
+
+        # Constraint 2. The processing time on each machine must be at most C_max
+        for i in range(self.n_machines):
+            model.addCons(sum(x[i, j] * int(self.M[i][j]) for j in range(self.n_jobs)) <= C_max)
+
+        # Print the model
+        # model.writeProblem('model.lp')
+
+        # Optimize the model
+        model.optimize()
+        # model.freeTransform()
+
+
+        return model.getObjVal()
+
+    def opt_configuration_LP(self):
+        """
+        Solve the configuration LP of the restricted assignment problem with integer processing times, as done in Jansen, Rohwedder 2017.
+        This is not perfect in terms of what it's written in the paper, but it does the job
+        """
+        T = self.opt_LP()
+
+        # Get all the possible combinations of all the possible size for each machine
+
 
 
 class Instance:

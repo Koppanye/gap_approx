@@ -1,11 +1,10 @@
-from tabnanny import verbose
-
 from instance import InstanceRestrictedAssignment
+from instances_template import pick_one_instance
 
-# Specify the input dimensions
-n = 4 # Jobs
-m = 3 # Machines
 
-instance = InstanceRestrictedAssignment(n, m, q=0.3)
-x, C_max = instance.opt_IP()
-C_max_LP_config = instance.opt_LP()
+n, m, M = pick_one_instance("jansen_land_maark_2018")
+instance = InstanceRestrictedAssignment(n, m, generate=False, M = M)
+sol, C_max = instance.opt_IP()
+print(f"Optimal C_max: {C_max}")
+C_max_LP = instance.opt_LP()
+print(f"Optimal C_max LP relaxation: {C_max_LP}")

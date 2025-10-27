@@ -2,6 +2,8 @@ from pyscipopt import Model
 from itertools import combinations
 import numpy as np
 
+# TODO add possibility to hardcode instances
+# TODO add possibility to manage the case where q = 0
 class InstanceRestrictedAssignment():
     """
     Class for instances of the restricted assignment problem with integer processing times
@@ -23,7 +25,7 @@ class InstanceRestrictedAssignment():
         Solve the configuration LP of the problem
     """
 
-    def __init__(self, n, m, q, p_max = 100):
+    def __init__(self, n, m, generate, M = None, q = 0.1, distribution="uniform", p_max = 100, seed=1):
         """
         Constructor for the InstanceRestrictedAssignment class.
         Parameters
@@ -45,21 +47,32 @@ class InstanceRestrictedAssignment():
         self.q = q
         self.p_max = p_max
         self.M = np.zeros((self.n_machines, self.n_jobs), dtype=int) # Machines x Jobs as in Jansen, Rohwedder 2017
+        self.distribution = distribution
 
-        # Basic checks
-        assert 0 <= q <= 1, "Probability q must be between 0 and 1"
+        if generate:
+            # Basic checks
+            assert 0 <= q <= 1, "Probability q must be between 0 and 1"
 
-        # Set random seed for reproducibility
-        np.random.seed()
-        for j in range(self.n_jobs):
-            # Random processing time between 1 and p_max
-            p_j = np.random.randint(1, self.p_max)  # Random processing time between 1 and 100
-            rng = np.random.default_rng()
-            assignments = rng.binomial(1, self.q, self.n_machines)
-            # If the max is 0, then trial again
-            while np.max(assignments) > 0:
+            # Set random seed for reproducibility
+            np.random.seed(seed)
+
+            for j in range(self.n_jobs):
+                # Random processing time between 1 and p_max
+                if self.distribution == "uniform":
+                    p_j = np.random.randint(1, self.p_max)  # Random processing time between 1 and 100
+                elif self.distribution == "exponential":
+                    p_j = int(np.random.exponential(scale=self.p_max/5)) + 1
+                    assert p_j > 0, "Processing time must be positive"
+                    p_j = min(p_j, self.p_max)
+                rng = np.random.default_rng()
                 assignments = rng.binomial(1, self.q, self.n_machines)
-            self.M[:, j] = [p_j if assignments[i] == 0 else -1 for i in range(self.n_machines)]
+                # If the max is 0, then trial again
+                while len(set(assignments)) == 1:
+                    assignments = rng.binomial(1, self.q, self.n_machines)
+                self.M[:, j] = [p_j if assignments[i] == 0 else -1 for i in range(self.n_machines)]
+        else:
+            assert M is not None, "If generate is False, M must be provided"
+            self.M = M
 
 
     def opt_LP(self):

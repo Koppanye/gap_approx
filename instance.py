@@ -75,21 +75,27 @@ class InstanceRestrictedAssignment():
             self.M = M
 
 
-    def opt_LP(self):
+    def opt_LP(self, verbose=False, C_max = None):
         """
         Do a binary search to find the smallest integer for which is_feasible(T) is true.
         The initial guesses are as follows:
             l = highest processing time for any job - 1
             r = sum of all processing times
         We maintain the invariant that LB is in (l, r].
+
+        Hint: as sometime we compute the integer value, just to speed up the computation, we provide the C_max as "right" initial guess.
         """
         right = sum(sum(int(self.M[i][j]) for j in range(self.n_jobs)) for i in range(self.n_machines))
         left = max(max(int(self.M[i][j]) for j in range(self.n_jobs)) for i in range(self.n_machines))-1
+        if C_max != None:
+            right = int(C_max)
         while right - left > 1:
             m = (left + right)//2
             is_feasible = self.is_feasible(m)
             if is_feasible:
                 right = m
+                if verbose:
+                    print(f"LP feasible for T={m}")
             else:
                 left = m
 
@@ -127,15 +133,16 @@ class InstanceRestrictedAssignment():
             return True
         return False
 
-    def opt_IP(self):
+    def opt_IP(self, verbose=False):
         model = Model('Restricted assignment with 2 processing times')
-        model.hideOutput()
+        if not verbose:
+            model.hideOutput()
 
         # Decision variables
         x = {}
         for i in range(self.n_machines):
             for j in range(self.n_jobs):
-                if self.M[i][j] == -1:
+                if self.M[i][j] == 0:
                     x[i, j] = model.addVar(vtype="B", name=f"x({i},{j})", lb=0.0, ub=0.0)
                     #x[i, j] = 0
                 else:

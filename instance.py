@@ -4,6 +4,8 @@ import numpy as np
 
 # TODO add possibility to hardcode instances
 # TODO add possibility to manage the case where q = 0
+
+
 class InstanceRestrictedAssignment():
     """
     Class for instances of the restricted assignment problem with integer processing times
@@ -142,7 +144,7 @@ class InstanceRestrictedAssignment():
         x = {}
         for i in range(self.n_machines):
             for j in range(self.n_jobs):
-                if self.M[i][j] == 0:
+                if self.M[i][j] == -1:
                     x[i, j] = model.addVar(vtype="B", name=f"x({i},{j})", lb=0.0, ub=0.0)
                     #x[i, j] = 0
                 else:

@@ -71,11 +71,10 @@ class InstanceRestrictedAssignment():
                 # If the max is 0, then trial again
                 while len(set(assignments)) == 1:
                     assignments = rng.binomial(1, self.q, self.n_machines)
-                self.M[:, j] = [p_j if assignments[i] == 0 else -1 for i in range(self.n_machines)]
+                self.M[:, j] = [p_j if assignments[i] == 0 else 0 for i in range(self.n_machines)]
         else:
             assert M is not None, "If generate is False, M must be provided"
             self.M = M
-
 
     def opt_LP(self, verbose=False, C_max = None):
         """
@@ -113,7 +112,7 @@ class InstanceRestrictedAssignment():
 
         # Determining valid configurations (with makespan at most T) for each machine in the form of a dict
         # Values are lists of tuples, one tuple for each valid configuration
-        configs = {i: [c for length in range(1, self.n_jobs + 1) for c in combinations([j for j in range(self.n_jobs) if self.M[i][j] != -1], length) if sum(int(self.M[i][j]) for j in c) <= T] for i in range(self.n_machines)}
+        configs = {i: [c for length in range(1, self.n_jobs + 1) for c in combinations([j for j in range(self.n_jobs) if self.M[i][j] != 0], length) if sum(int(self.M[i][j]) for j in c) <= T] for i in range(self.n_machines)}
 
         # Decision variables
         x = {}
@@ -144,7 +143,7 @@ class InstanceRestrictedAssignment():
         x = {}
         for i in range(self.n_machines):
             for j in range(self.n_jobs):
-                if self.M[i][j] == -1:
+                if self.M[i][j] == 0:
                     x[i, j] = model.addVar(vtype="B", name=f"x({i},{j})", lb=0.0, ub=0.0)
                     #x[i, j] = 0
                 else:

@@ -134,6 +134,42 @@ class InstanceRestrictedAssignment():
             return True
         return False
 
+    def get_A_b(self, T, filename = "model.lp"):
+        """
+        :param T: integer
+        :return: True if LP(T) is feasible, otherwise False
+        """
+        model = Model('Restricted assignment with 2 processing times')
+        model.hideOutput()
+
+        # Determining valid configurations (with makespan at most T) for each machine in the form of a dict
+        # Values are lists of tuples, one tuple for each valid configuration
+        configs = {i: [c for length in range(1, self.n_jobs + 1) for c in combinations([j for j in range(self.n_jobs) if self.M[i][j] != 0], length) if sum(int(self.M[i][j]) for j in c) <= T] for i in range(self.n_machines)}
+
+        # Decision variables
+        x = {}
+        for i in configs.keys():
+            for c in configs[i]:
+                x[i, c] = model.addVar(vtype="C", name=f"x({i},{c})", lb=0.0)
+
+        # Each machine can allocate at most 1 config
+        for i in range(self.n_machines):
+            if len(configs[i]) != 0:
+                model.addCons(sum(x[i, c] for c in configs[i]) <= 1)
+
+        # Each job gets allocated at least once
+        for j in range(self.n_jobs):
+            model.addCons(sum(sum(x[i, c] for c in configs[i] if j in c) for i in range(self.n_machines)) >= 1)
+
+        model.writeProblem(filename)
+
+        model.optimize()
+
+        if model.getStatus() == 'optimal':
+            print(f"Check file {filename} for A and b")
+        else:
+            raise ValueError("Model is not optimal, cannot extract A and b")
+
     def opt_IP(self, verbose=False):
         model = Model('Restricted assignment with 2 processing times')
         if not verbose:

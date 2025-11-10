@@ -1,5 +1,4 @@
 def pick_one_instance(instance_string):
-    n, m, M = 0, 0, []
     if instance_string == "jansen_land_maark_2018":
         M = [
             [1, 1, 1, 0, 0, 0, 0],

@@ -14,6 +14,7 @@ if __name__ == "__main__":
     instance = InstanceRestrictedAssignment(n_jobs, n_machines, generate=False, M = M)
     T = instance.opt_LP(verbose=False)
     instance.get_A_b_eq(T, filename=filename)
+    #instance.get_A_b(T)
     #T_IP = instance.opt_IP(verbose=False)
 
     # Write polimake script

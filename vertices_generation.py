@@ -14,21 +14,21 @@ if __name__ == "__main__":
     instance = InstanceRestrictedAssignment(n_jobs, n_machines, generate=False, M = M)
     T = instance.opt_LP(verbose=False)
     instance.get_A_b_eq(T, filename=filename)
-    #instance.get_A_b(T)
-    #T_IP = instance.opt_IP(verbose=False)
-
-    # Write polimake script
-    """
-    $f = lp2poly('model.lp');
-    $p = new Polytope<Rational>($f);
-    print $p -> VERTICES;
-    """
-    F = open("to_run.txt", "w+")
-
-    F.write("use application \"polytope\";\n")
-    F.write("my $f = lp2poly('" + filename + "');\n")
-    F.write("my $p = new Polytope<Rational>($f);\n")
-    F.write("print $p -> VERTICES;\n")
-    F.close()
-
-    subprocess.run("polymake --script to_run.txt > vertices_eq.txt", shell=True)
+    instance.get_A_b(T, filename="model_with_sets.lp")
+    T_IP = instance.opt_IP(verbose=False)
+    #
+    # # Write polimake script
+    # """
+    # $f = lp2poly('model.lp');
+    # $p = new Polytope<Rational>($f);
+    # print $p -> VERTICES;
+    # """
+    # F = open("to_run.txt", "w+")
+    #
+    # F.write("use application \"polytope\";\n")
+    # F.write("my $f = lp2poly('" + filename + "');\n")
+    # F.write("my $p = new Polytope<Rational>($f);\n")
+    # F.write("print $p -> VERTICES;\n")
+    # F.close()
+    #
+    # subprocess.run("polymake --script to_run.txt > vertices_eq.txt", shell=True)

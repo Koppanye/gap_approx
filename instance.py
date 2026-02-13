@@ -88,19 +88,22 @@ class InstanceRestrictedAssignment():
         """
         right = sum(sum(int(self.M[i][j]) for j in range(self.n_jobs)) for i in range(self.n_machines))
         left = max(max(int(self.M[i][j]) for j in range(self.n_jobs)) for i in range(self.n_machines))-1
+        _, x_keep = self.is_feasible(right)
         if C_max != None:
             right = int(C_max)
+            _, x_keep = self.is_feasible(right)
         while right - left > 1:
             m = (left + right)//2
-            is_feasible = self.is_feasible(m)
+            is_feasible, x = self.is_feasible(m)
             if is_feasible:
+                x_keep = x
                 right = m
                 if verbose:
                     print(f"LP feasible for T={m}")
             else:
                 left = m
 
-        return right
+        return right, x_keep
 
     def is_feasible(self, T):
         """
@@ -131,8 +134,9 @@ class InstanceRestrictedAssignment():
 
         model.optimize()
         if model.getStatus() == 'optimal':
-            return True
-        return False
+            x_val = dict(zip(x.keys(), [model.getVal(x[e]) for e in x.keys()]))
+            return True, x_val
+        return False, {}
 
     def get_A_b(self, T, filename = "model.lp"):
         """

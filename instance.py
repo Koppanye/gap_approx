@@ -159,11 +159,11 @@ class InstanceRestrictedAssignment():
         # Each machine can allocate at most 1 config
         for i in range(self.n_machines):
             if len(configs[i]) != 0:
-                model.addCons(sum(x[i, c] for c in configs[i]) <= 1)
+                model.addCons(sum(x[i, c] for c in configs[i]) == 1)
 
         # Each job gets allocated at least once
         for j in range(self.n_jobs):
-            model.addCons(sum(sum(x[i, c] for c in configs[i] if j in c) for i in range(self.n_machines)) >= 1)
+            model.addCons(sum(sum(x[i, c] for c in configs[i] if j in c) for i in range(self.n_machines)) == 1)
 
         model.writeProblem(filename)
 

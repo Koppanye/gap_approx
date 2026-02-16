@@ -84,7 +84,7 @@ class InstanceRestrictedAssignment():
             r = sum of all processing times
         We maintain the invariant that LB is in (l, r].
 
-        Hint: as sometime we compute the integer value, just to speed up the computation, we provide the C_max as "right" initial guess.
+        Hint: as sometimes we compute the integer value, just to speed up the computation, we provide the C_max as "right" initial guess.
         """
         right = sum(sum(int(self.M[i][j]) for j in range(self.n_jobs)) for i in range(self.n_machines))
         left = max(max(int(self.M[i][j]) for j in range(self.n_jobs)) for i in range(self.n_machines))-1

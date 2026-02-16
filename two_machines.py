@@ -1,0 +1,73 @@
+from pyscipopt import Model
+from itertools import combinations
+import numpy as np
+"""
+We consider the case separately when there are just 2 machines. In that case, the problem is equivalent
+with the covering polyhedra with an easier formulation. We can further assume that no machine-exclusive job exists.
+"""
+
+class InstanceTwoMachines:
+    def __init__(self, n_jobs, p_times = None, p_max = 100, seed = 1):
+        self.n_jobs = n_jobs
+        self.p_times = p_times if p_times else [np.random.randint(p_max) for _ in range(n_jobs)]
+        self.p_max = p_max
+        self.seed = seed
+
+    def opt_LP(self, verbose=False):
+        """
+        Do a binary search to find the smallest integer for which is_feasible(T) is true.
+        The initial guesses are as follows:
+            l = highest processing time for any job - 1
+            r = sum of all processing times
+        We maintain the invariant that LB is in (l, r].
+
+        Hint: as sometimes we compute the integer value, just to speed up the computation, we provide the C_max as "right" initial guess.
+        """
+        right = sum(self.p_times)
+        left = sum(self.p_times)//2 - 1
+        _, x_keep = self.is_feasible(right)
+        while right - left > 1:
+            m = (left + right)//2
+            is_feasible, x = self.is_feasible(m)
+            if is_feasible:
+                x_keep = x
+                right = m
+                if verbose:
+                    print(f"LP feasible for T={m}")
+            else:
+                left = m
+
+        return right, x_keep
+
+    def is_feasible(self, T, job_pair = [-1, -1]):
+        """
+        :param T: integer
+        :return: True if LP(T) is feasible, otherwise False
+        """
+        model = Model('Restricted assignment with 2 processing times')
+        model.hideOutput()
+
+        # Determining valid configurations (with makespan at most T) for each machine in the form of a dict
+        # Values are lists of tuples, one tuple for each valid configuration
+        # When a job pair is specified, we leave out all configs containing both jobs.
+        configs = [c for length in range(1, self.n_jobs + 1) for c in combinations(range(self.n_jobs), length) if
+                   sum(int(self.p_times[j]) for j in c) <= T and not (job_pair[0] in c and job_pair[1] in c)]
+
+        # Decision variables
+        x = {}
+        for c in configs:
+            x[c] = model.addVar(vtype="C", name=f"x({c})", lb=0.0)
+
+        # The sum of the variables is at most 2.
+        model.addCons(sum(x[c] for c in configs) <= 2)
+
+        # Each job gets allocated at least once
+        for j in range(self.n_jobs):
+            model.addCons(sum(x[c] for c in configs if j in c) >= 1)
+
+        model.optimize()
+        if model.getStatus() == 'optimal':
+            x_val = dict(zip(x.keys(), [model.getVal(x[e]) for e in x.keys()]))
+            return True, x_val
+        return False, {}
+

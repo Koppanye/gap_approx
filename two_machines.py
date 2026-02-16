@@ -7,13 +7,14 @@ with the covering polyhedra with an easier formulation. We can further assume th
 """
 
 class InstanceTwoMachines:
-    def __init__(self, n_jobs, p_times = None, p_max = 100, seed = 1):
+    def __init__(self, n_machines, n_jobs, p_times = None, p_max = 100, seed = 1):
         self.n_jobs = n_jobs
+        self.n_machines = n_machines
         self.p_times = p_times if p_times else [np.random.randint(p_max) for _ in range(n_jobs)]
         self.p_max = p_max
         self.seed = seed
 
-    def opt_LP(self, verbose=False):
+    def opt_LP(self, verbose=False, C_max = None):
         """
         Do a binary search to find the smallest integer for which is_feasible(T) is true.
         The initial guesses are as follows:
@@ -24,7 +25,9 @@ class InstanceTwoMachines:
         Hint: as sometimes we compute the integer value, just to speed up the computation, we provide the C_max as "right" initial guess.
         """
         right = sum(self.p_times)
-        left = sum(self.p_times)//2 - 1
+        left = sum(self.p_times)//self.n_machines - 1
+        if C_max:
+            right = min(right, C_max)
         _, x_keep = self.is_feasible(right)
         while right - left > 1:
             m = (left + right)//2
@@ -59,7 +62,7 @@ class InstanceTwoMachines:
             x[c] = model.addVar(vtype="C", name=f"x({c})", lb=0.0)
 
         # The sum of the variables is at most 2.
-        model.addCons(sum(x[c] for c in configs) <= 2)
+        model.addCons(sum(x[c] for c in configs) <= self.n_machines)
 
         # Each job gets allocated at least once
         for j in range(self.n_jobs):
@@ -70,4 +73,43 @@ class InstanceTwoMachines:
             x_val = dict(zip(x.keys(), [model.getVal(x[e]) for e in x.keys()]))
             return True, x_val
         return False, {}
+
+    def opt_IP(self, verbose=False):
+        model = Model('Restricted assignment with 2 processing times')
+        if not verbose:
+            model.hideOutput()
+
+        # Decision variables
+        x = {}
+        for i in range(self.n_machines):
+            for j in range(self.n_jobs):
+                x[i, j] = model.addVar(vtype="B", name=f"x({i},{j})", lb=0.0)
+
+        # Makespan
+        C_max = model.addVar(vtype="C", name="C_max", lb=0.0)
+
+        # Objective function
+        model.setObjective(C_max, "minimize")
+
+        # Constraint 1. You have to allocate each job
+        for j in range(self.n_jobs):
+            model.addCons(sum(x[i, j] for i in range(self.n_machines)) == 1)
+
+        # Constraint 2. The processing time on each machine must be at most C_max
+        for i in range(self.n_machines):
+            model.addCons(sum(x[i, j] * int(self.p_times[j]) for j in range(self.n_jobs)) <= C_max)
+
+        # Print the model
+        # model.writeProblem('model.lp')
+
+        # Optimize the model
+        model.optimize()
+        # model.freeTransform()
+
+        solution = list({j: i for j in range(self.n_jobs) for i in range(self.n_machines) if model.getVal(x[i, j]) > 0.5}.values())
+
+        return solution, model.getObjVal()
+
+    def gap(self):
+        return self.opt_IP()[1] / self.opt_LP()
 

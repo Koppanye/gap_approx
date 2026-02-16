@@ -6,7 +6,7 @@ We consider the case separately when there are just 2 machines. In that case, th
 with the covering polyhedra with an easier formulation. We can further assume that no machine-exclusive job exists.
 """
 
-class InstanceTwoMachines:
+class Covering:
     def __init__(self, n_machines, n_jobs, p_times = None, p_max = 100, seed = 1):
         self.n_jobs = n_jobs
         self.n_machines = n_machines

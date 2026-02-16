@@ -3,8 +3,9 @@ from instances_template import pick_one_instance
 import numpy as np
 
 
-#n, m, M = pick_one_instance("jansen_land_maark_2018_modified")
+#n, m, M = pick_one_instance("1034/1020")
 M = np.array([[3, 6, 12, 24, 17, 33, 66, 132, 264, 528, 160, 640, 576, 320, 288],
+              [3, 6, 12, 24, 17, 33, 66, 132, 264, 528, 160, 640, 576, 320, 288],
               [3, 6, 12, 24, 17, 33, 66, 132, 264, 528, 160, 640, 576, 320, 288],
               [3, 6, 12, 24, 17, 33, 66, 132, 264, 528, 160, 640, 576, 320, 288]
             ])

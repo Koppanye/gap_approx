@@ -55,12 +55,17 @@ def pick_one_instance(instance_string):
             [3, 6, 0, 24, 17, 0, 0, 132, 264, 160, 0, 48, 0, 288],
             [0, 6, 12, 24, 17, 33, 66, 0, 0, 0, 112, 0, 320, 288]
         ]
+    elif instance_string == "monaldo":
+        M = [[3, 6, 12, 24, 17, 33, 66, 132, 264, 528, 160, 640, 576, 320, 288],
+              [3, 6, 12, 24, 17, 33, 66, 132, 264, 528, 160, 640, 576, 320, 288],
+              [3, 6, 12, 24, 17, 33, 66, 132, 264, 528, 160, 640, 576, 320, 288]
+                      ]
 
     else:
         raise ValueError(f"Instance '{instance_string}' not recognized, must be one of\n" + \
                          f"jansen_land_maark_2018,\n" + f"jansen_land_maark_2018_modified,\n" + \
                             f"jansen_land_maark_2018_expanded\n" + "koppany_2025\n" + \
-                         "koppany_2025_short"
+                         "koppany_2025_short", "monaldo"
                        )
 
     n = len(M[0])

@@ -4,7 +4,7 @@ from pyscipopt import Model
 from utils import TOL
 from instance import InstanceRestrictedAssignment
 from fractions import Fraction
-from pyscipopt import Model, IISfinder, SCIP_RESULT
+from pyscipopt import Model, SCIP_RESULT
 
 # # Instance 1
 #p = [9, 9, 7, 3, 9, 8, 3, 2, 6, 5]
@@ -23,6 +23,7 @@ from pyscipopt import Model, IISfinder, SCIP_RESULT
 # Instance 4
 p = [12, 59, 56, 8, 16, 25]
 T = 89
+ass = [1, 1, 0, 0, 1, 0]
 
 
 # For everything
@@ -35,11 +36,13 @@ M = np.asarray([p for _ in range(n_machines)])
 # n_jobs = 13
 # n_machines = 2
 # p = [np.random.randint(1, 50) for _ in range(n_jobs)]
-# M = [p for _ in range(n_machines)]
-# # print(f"p = {p}", flush=True)
+
+# -----------------------
+# # If you need to solve the IP
+# print(f"p = {p}", flush=True)
 # instance = InstanceRestrictedAssignment(n_jobs, n_machines, generate=False, M = M)
 # print("Instance generated!", flush=True)
-# T, x = instance.opt_LP(verbose=True)
+# ass, T_int = instance.opt_IP(verbose=True)
 
 print(f"Optimal makespan {T}")
 
@@ -80,8 +83,8 @@ for i in range(n_machines):
 # Add a fake constraint
 # model.addCons(-sum(u) + sum(v) >= 2*TOL, name="absurdum")
 
-# Add non neg of u
-model.addCons(u[0] >= 1)
+# Add >= 1 constraint for u0
+model.addCons(u[0] >= 1, name="u0_geq_1")
 
 model.optimize()
 
@@ -98,6 +101,7 @@ if model.getStatus() == "optimal":
             max_config_weight = config_weight
             max_config = C
 
+    print("Configuration with max weight", max_config, "with weight", max_config_weight)
     print("v in the config having the max weight", sum(v_star[i] for i in max_config))
     for i in max_config:
         print(f"v[{i}] = {v_star[i]}, p[{i}] = {p[i]}; ", end=" ")
@@ -129,3 +133,11 @@ else:
     subscip = iis.getSubscip()  # Get constraints in the IISfor cons in subscip.getConss():
     for cons in subscip.getConss():
         print(f"Constraint: {cons.name}")  # Get variables in the IISfor var in subscip.getVars():
+
+print("\n→ → → → → → → → → → →")
+# Fix one variable
+j_test = 2
+for C in configs[0]:
+    if j_test in C:
+        this_C = sum(p[j] for j in C)
+        print(f"{p[j_test]} --> {Fraction(this_C * p[j_test] / T).limit_denominator()}")

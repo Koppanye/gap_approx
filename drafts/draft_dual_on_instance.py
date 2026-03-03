@@ -6,19 +6,22 @@ from instance import InstanceRestrictedAssignment
 from fractions import Fraction
 from pyscipopt import Model, SCIP_RESULT
 
-# Instance 1
-p = [9, 9, 7, 3, 9, 8, 3, 2, 6, 5]
-T = 31 # Optimal makespan
+# # Instance 1
+# p = [9, 9, 7, 3, 9, 8, 3, 2, 6, 5]
+# T = 31 # Optimal makespan
+# y_non_zero = {(0, (0, 1, 2, 8))  :  5/21, (0, (0, 1, 5, 9))  :  1/3, (0, (0, 2, 3, 4, 6))  :  4/21, (0, (1, 2, 3, 6, 7, 9))  :  1/7, (0, (2, 5, 6, 7, 8, 9))  :  2/21, (1, (1, 2, 4, 9))  :  5/21, (1, (0, 2, 3, 5, 7))  :  2/21, (1, (0, 4, 7, 8, 9))  :  2/21, (1, (0, 3, 6, 7, 8, 9))  :  1/21, (1, (1, 3, 6, 7, 8, 9))  :  1/21, (1, (3, 4, 5, 6, 7, 8))  :  10/21}
+
 
 # # Instance 2
 # p = [30, 46, 81, 30, 55, 71, 33, 22, 5, 93]
 # T = 233
-# Constraint: 1 - (0, 1, 2, 5, 8)
-# Constraint: 0 - (3, 4, 6, 7, 9)
 
-# # Instance 3
-# p = [23, 48, 20, 9, 19, 21, 21, 46, 17, 43, 42, 17, 3]
-# T = 165
+
+# Instance 3
+p = [23, 48, 20, 9, 19, 21, 21, 46, 17, 43, 42, 17, 3]
+T = 165
+y_non_zero = {(0, (1, 3, 6, 9, 10)) : 1/4, (0, (1, 3, 7, 9, 11)) : 1/28, (0, (0, 4, 5, 9, 10, 11)) : 1/28, (0, (1, 3, 7, 8, 10, 12)) : 1/4, (0, (2, 4, 5, 7, 8, 10)) : 1/14, (0, (2, 4, 6, 7, 10, 11)) : 1/28, (0, (1, 3, 5, 6, 7, 11, 12)) : 1/28, (0, (2, 4, 5, 9, 10, 11, 12)) : 5/28, (0, (0, 2, 5, 6, 8, 9, 11, 12)) : 3/28, (1, (0, 1, 2, 3, 4, 7)) : 3/7, (1, (5, 6, 7, 8, 9, 11)) : 1/7, (1, (0, 2, 5, 6, 8, 10, 11, 12)) : 5/28, (1, (0, 4, 5, 6, 8, 9, 11, 12)) : 1/4}
+
 
 # # Instance 4
 # p = [12, 59, 56, 8, 16, 25]
@@ -45,6 +48,15 @@ M = np.asarray([p for _ in range(n_machines)])
 # instance = InstanceRestrictedAssignment(n_jobs, n_machines, generate=False, M = M)
 # print("Instance generated!", flush=True)
 # ass, T_int = instance.opt_IP(verbose=True)
+
+# -----------------------
+# # # If you need to solve the LP
+# instance = InstanceRestrictedAssignment(n_jobs, n_machines, generate=False, M = M)
+# print("Instance generated!", flush=True)
+# LP, y = instance.opt_LP(verbose=True)
+# for k in y.keys():
+#     if y[k] > TOL:
+#         print(k, ":", Fraction(y[k]).limit_denominator(), end=", ")
 
 print(f"Optimal makespan {T}")
 

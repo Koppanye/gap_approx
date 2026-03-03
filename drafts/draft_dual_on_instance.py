@@ -6,9 +6,9 @@ from instance import InstanceRestrictedAssignment
 from fractions import Fraction
 from pyscipopt import Model, SCIP_RESULT
 
-# # Instance 1
-#p = [9, 9, 7, 3, 9, 8, 3, 2, 6, 5]
-# T = 31 # Optimal makespan
+# Instance 1
+p = [9, 9, 7, 3, 9, 8, 3, 2, 6, 5]
+T = 31 # Optimal makespan
 
 # # Instance 2
 # p = [30, 46, 81, 30, 55, 71, 33, 22, 5, 93]
@@ -20,10 +20,10 @@ from pyscipopt import Model, SCIP_RESULT
 # p = [23, 48, 20, 9, 19, 21, 21, 46, 17, 43, 42, 17, 3]
 # T = 165
 
-# Instance 4
-p = [12, 59, 56, 8, 16, 25]
-T = 89
-ass = [1, 1, 0, 0, 1, 0]
+# # Instance 4
+# p = [12, 59, 56, 8, 16, 25]
+# T = 89
+# ass = [1, 1, 0, 0, 1, 0]
 
 
 # For everything
@@ -36,6 +36,8 @@ M = np.asarray([p for _ in range(n_machines)])
 # n_jobs = 13
 # n_machines = 2
 # p = [np.random.randint(1, 50) for _ in range(n_jobs)]
+
+
 
 # -----------------------
 # # If you need to solve the IP
@@ -54,20 +56,30 @@ configs = {i: [c for length in range(1, n_jobs + 1) for c in combinations([j for
 # Create al the combinations of two jobs
 #j_pairs = combinations(range(n_jobs), 2)
 #for j1, j2 in j_pairs:
-j1 = 4
-j2 = 5
+j1 = 0
+j2 = 3
 
 # Nice, now write the dual
 model = Model('Restricted assignment with 2 processing times')
+
+# -------------
+# Some parameters
+get_more_opt = False
+if get_more_opt:
+    model.setParam("limits/maxsol", 10)   # allow many stored solutions
 
 # Add variables
 u = []
 v = []
 for i in range(n_machines):
-    u.append(model.addVar(vtype="C", name=f"u({i})", lb=0.0))
+    #u.append(model.addVar(vtype="C", name=f"u({i})", lb=0.0))
+    u.append(model.addVar(vtype="C", name=f"u({i})", lb=None))
+
 
 for j in range(n_jobs):
-    v.append(model.addVar(vtype="C", name=f"v({j})", lb=0.0))
+    #v.append(model.addVar(vtype="C", name=f"v({j})", lb=0.0))
+    v.append(model.addVar(vtype="C", name=f"v({j})", lb=None))
+
 
 # Objective functuon
 model.setObjective(-sum(u) + sum(v), "maximize")
@@ -83,49 +95,73 @@ for i in range(n_machines):
 # Add a fake constraint
 # model.addCons(-sum(u) + sum(v) >= 2*TOL, name="absurdum")
 
-# Add >= 1 constraint for u0
-model.addCons(u[0] >= 1, name="u0_geq_1")
+# Try e feasible solution
+u_feas = 1
+v_feas = []
+for j in range(n_jobs):
+    configs_j = [C for C in configs[0] if j in C]
+    weight_config_j = [sum(p[j] for j in C) for C in configs_j]
+    # Pick maximum
+    max_weight_config_j = max(weight_config_j)
+    v_feas.append(Fraction(u_feas * p[j] / max_weight_config_j).limit_denominator())
+
+# Add fake constraint to force the solution to be as I wish
+model.addCons(u[0] == u_feas, name="force_u")
+model.addCons(u[1] == u_feas, name="force_u_2")
+
+for j in range(n_jobs):
+    model.addCons(v[j] == v_feas[j], name=f"force_v_{j}")
 
 model.optimize()
 
 if model.getStatus() == "optimal":
-    v_star = {j : Fraction(model.getVal(v[j])).limit_denominator() for j in range(n_jobs)}
-    u_star = {i : Fraction(model.getVal(u[i])).limit_denominator() for i in range(n_machines)}
-    obj = model.getObjVal()
+    if get_more_opt:
+        sols = model.getSols()
+        best_obj = model.getObjVal()
 
-    max_config_weight = 0
-    max_config = None
-    for C in configs[0]:
-        config_weight = sum(p[j] for j in C)
-        if config_weight > max_config_weight:
-            max_config_weight = config_weight
-            max_config = C
+        for i, sol in enumerate(sols):
+            if model.getSolObjVal(sol) == best_obj:
+                print(f"\nOptimal solution {i + 1}")
+                for var in model.getVars():
+                    print(var.name, model.getSolVal(sol, var))
+    else:
+        v_star = {j : Fraction(model.getVal(v[j])).limit_denominator() for j in range(n_jobs)}
+        u_star = {i : Fraction(model.getVal(u[i])).limit_denominator() for i in range(n_machines)}
+        obj = model.getObjVal()
 
-    print("Configuration with max weight", max_config, "with weight", max_config_weight)
-    print("v in the config having the max weight", sum(v_star[i] for i in max_config))
-    for i in max_config:
-        print(f"v[{i}] = {v_star[i]}, p[{i}] = {p[i]}; ", end=" ")
-    print("\n→ → → → → → → → → → →")
+        max_config_weight = 0
+        max_config = None
+        for C in configs[0]:
+            config_weight = sum(p[j] for j in C)
+            if config_weight > max_config_weight:
+                max_config_weight = config_weight
+                max_config = C
 
-    # Longest configuration
-    length_longest_config = 0
-    longest_config = None
-    for C in configs[0]:
-        if len(C) > length_longest_config:
-            length_longest_config = len(C)
-            longest_config = C
+        print("Configuration with max weight", max_config, "with weight", max_config_weight)
+        print(f"sum of $v_j$ for j in the config having the max weight: ", sum(v_star[i] for i in max_config))
+        for i in max_config:
+            print(f"v[{i}] = {v_star[i]}, p[{i}] = {p[i]}; ", end=" ")
+        print("\n→ → → → → → → → → → →")
 
-    print("v in the config having longest value", sum(v_star[i] for i in longest_config))
-    for i in longest_config:
-        print(f"v[{i}] = {v_star[i]}, p[{i}] = {p[i]}; ", end=" ")
-    print("\n→ → → → → → → → → → →")
+        # Longest configuration
+        length_longest_config = 0
+        longest_config = None
+        for C in configs[0]:
+            if len(C) > length_longest_config:
+                length_longest_config = len(C)
+                longest_config = C
+
+        print(f"sum of $v_j$ for j in the longest configuration:", sum(v_star[i] for i in longest_config))
+        for i in longest_config:
+            print(f"v[{i}] = {v_star[i]}, p[{i}] = {p[i]}; ", end=" ")
+        print("\n→ → → → → → → → → → →")
 
 
-    for i in range(n_jobs):
-        print(f"v[{i}] = {Fraction(v_star[i]).limit_denominator()}")
-    for j in range(n_machines):
-        print(f"u[{j}] = {Fraction(u_star[j]).limit_denominator()}")
-    print("→ → → → → → → → → → →")
+        for i in range(n_jobs):
+            print(f"v[{i}] = {Fraction(v_star[i]).limit_denominator()}")
+        for j in range(n_machines):
+            print(f"u[{j}] = {Fraction(u_star[j]).limit_denominator()}")
+        print("→ → → → → → → → → → →")
 else:
     # Write the model
     iis = model.generateIIS()
@@ -134,10 +170,10 @@ else:
     for cons in subscip.getConss():
         print(f"Constraint: {cons.name}")  # Get variables in the IISfor var in subscip.getVars():
 
-print("\n→ → → → → → → → → → →")
-# Fix one variable
-j_test = 2
-for C in configs[0]:
-    if j_test in C:
-        this_C = sum(p[j] for j in C)
-        print(f"{p[j_test]} --> {Fraction(this_C * p[j_test] / T).limit_denominator()}")
+# print("\n→ → → → → → → → → → →")
+# # Fix one variable
+# j_test = 2
+# for C in configs[0]:
+#     if j_test in C:
+#         this_C = sum(p[j] for j in C)
+#         print(f"{p[j_test]} --> {Fraction(this_C * p[j_test] / T).limit_denominator()}")
